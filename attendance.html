@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attendance with GPS</title>
+  <script>
+    // Replace with your Google Form pre-filled URL up to location field
+    const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeGF_imyOBuVkD8hFOefWB2wNmSnSKKjbANB76pxMafSz8ljg/viewform?usp=pp_url&entry.846968130=J1&entry.718692023=na";
+
+    // Replace with your actual keys below
+    const rollKey = "entry.846968130";      // Roll No key
+    const locationKey = "entry.718692023";  // Location key
+
+    function openFormWithLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const location = lat + "," + lon;
+
+          // Build form URL with empty roll and filled location
+          const url = formBaseURL + 
+            "?" + rollKey + "=" + "" + 
+            "&" + locationKey + "=" + encodeURIComponent(location);
+
+          // Redirect user to Google Form
+          window.location.href = url;
+        }, () => {
+          alert("Please allow location permission.");
+        });
+      } else {
+        alert("Geolocation not supported.");
+      }
+    }
+
+    window.onload = openFormWithLocation;
+  </script>
+</head>
+<body>
+  <h2>Loading Attendance Form...</h2>
+  <p>Please allow location access to proceed.</p>
+</body>
+</html>
