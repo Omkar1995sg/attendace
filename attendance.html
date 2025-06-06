@@ -1,31 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Attendance with GPS</title>
+  <title>Attendance with Address</title>
   <script>
-    // Replace with your Google Form pre-filled URL up to location field
-    const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeGF_imyOBuVkD8hFOefWB2wNmSnSKKjbANB76pxMafSz8ljg/viewform?usp=pp_url&entry.846968130=J1&entry.718692023=na";
-
-    // Replace with your actual keys below
+    const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeGF_imyOBuVkD8hFOefWB2wNmSnSKKjbANB76pxMafSz8ljg/viewform";
+    
     const rollKey = "entry.846968130";      // Roll No key
-    const locationKey = "entry.718692023";  // Location key
+    const locationKey = "entry.718692023";  // Location key (now address)
 
     function openFormWithLocation() {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          const location = lat + "," + lon;
 
-          // Build form URL with empty roll and filled location
-          const url = formBaseURL + 
-            "?" + rollKey + "=" + "" + 
-            "&" + locationKey + "=" + encodeURIComponent(location);
+          // Reverse geocoding using OpenStreetMap
+          const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
 
-          // Redirect user to Google Form
-          window.location.href = url;
+          try {
+            const response = await fetch(geoUrl);
+            const data = await response.json();
+            const address = data.display_name;
+
+            const url = formBaseURL +
+              "?usp=pp_url" +
+              "&" + rollKey + "=" +
+              "&" + locationKey + "=" + encodeURIComponent(address);
+
+            window.location.href = url;
+
+          } catch (err) {
+            alert("Failed to get address. Please check your internet connection.");
+          }
+
         }, () => {
-          alert("Please allow location permission.");
+          alert("Location permission denied.");
         });
       } else {
         alert("Geolocation not supported.");
@@ -37,6 +46,6 @@
 </head>
 <body>
   <h2>Loading Attendance Form...</h2>
-  <p>Please allow location access to proceed.</p>
+  <p>Please allow location access...</p>
 </body>
 </html>
