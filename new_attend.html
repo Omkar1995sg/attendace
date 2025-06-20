@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QR Attendance (GPS auto‑capture)</title>
+
+  <style>
+    /* very simple styling so users only see roll‑no box */
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    button[disabled] { opacity: .5; }
+  </style>
+
+  <script>
+    /* ---------- 1. CONFIGURE YOUR OWN IDs ---------- */
+    const SUBMIT_URL   = "https://docs.google.com/forms/d/e/1FAIpQLSeGF_imyOBuVkD8hFOefWB2wNmSnSKKjbANB76pxMafSz8ljg/formResponse";
+    const ROLL_KEY     = "entry.846968130";   // Roll No question ID
+    const ADDRESS_KEY  = "entry.718692023";   // Address/Location question ID (keep the question in the Form!)
+
+    /* ---------- 2. GET GPS → ADDRESS ---------- */
+    async function getAddress() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject("Geolocation not supported.");
+
+        navigator.geolocation.getCurrentPosition(async pos => {
+          try {
+            const { latitude, longitude } = pos.coords;
+            const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            const data = await res.json();
+            resolve(data.display_name);                          // nice full address
+          } catch (e) {
+            reject("Couldn’t turn GPS into address.");
+          }
+        }, () => reject("Location permission denied."));
+      });
+    }
+
+    /* ---------- 3. BOOTSTRAP ON PAGE LOAD ---------- */
+    window.addEventListener("DOMContentLoaded", async () => {
+      const status  = document.getElementById("status");
+      const addrInp = document.getElementById("addr");
+      const form    = document.getElementById("form");
+
+      try {
+        status.textContent = "Getting GPS location…";
+        const address = await getAddress();
+        addrInp.value = address;                 // hide the captured address
+        status.textContent = "Location captured ✅";
+        form.querySelectorAll("[disabled]").forEach(el => el.disabled = false);   // enable roll & button
+      } catch (msg) {
+        status.textContent = msg;
+      }
+    });
+
+    /* ---------- 4. SUBMIT HANDLER ---------- */
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      try {
+        await fetch(SUBMIT_URL, { method: "POST", mode: "no-cors", body: formData });
+        alert("Attendance recorded ✔");
+        e.target.reset();
+      } catch {
+        alert("Could not submit. Check connection and try again.");
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <h2>Attendance</h2>
+  <p id="status">Please allow location access…</p>
+
+  <!-- Visible fields: ONLY Roll No -->
+  <form id="form" onsubmit="handleSubmit(event)">
+    <label>
+      Roll No :
+      <input name="entry.846968130" type="text" required disabled>
+    </label>
+
+    <!-- Hidden address captured silently -->
+    <input id="addr" name="entry.718692023" type="hidden" value="">
+
+    <br><br>
+    <button type="submit" disabled>Submit</button>
+  </form>
+</body>
+</html>
