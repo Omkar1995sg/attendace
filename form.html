@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QR Attendance (GPS only)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    button[disabled] { opacity:.5; }
+  </style>
+
+  <script>
+    /* ─── 1. PUT YOUR OWN IDs HERE ─── */
+    const SUBMIT_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfnnyE2QnBs7bp3QrM3M0-HR5an49l4SwdQ--n-ChGk4CS-Jw/formResponse";
+
+    const ROLL_KEY = "entry.846968130";      // Roll‑No question
+    const LAT_KEY  = "entry.718692023";      // ⬇️ Latitude  question
+    const LON_KEY  = "entry.1188559004";      // ⬇️ Longitude question
+
+    /* ─── 2. UTILITIES ─── */
+    function setStatus(msg) { document.getElementById("status").textContent = msg; }
+
+    function getLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject("Geolocation not supported.");
+        navigator.geolocation.getCurrentPosition(
+          p => resolve(p.coords),
+          () => reject("Location permission denied.")
+        );
+      });
+    }
+
+    /* ─── 3. SUBMIT HANDLER ─── */
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const form   = e.target;
+      const button = form.querySelector("button");
+      button.disabled = true;
+
+      try {
+        setStatus("Getting GPS…");
+        const { latitude, longitude } = await getLocation();
+
+        /* fill hidden inputs */
+        document.getElementById("lat").value = latitude;
+        document.getElementById("lon").value = longitude;
+
+        setStatus("Submitting…");
+        const fd = new FormData(form);
+        await fetch(SUBMIT_URL, { method:"POST", mode:"no-cors", body:fd });
+
+        /* success → simple confirmation */
+        setStatus("Attendance recorded ✅");
+        form.reset();
+      } catch (msg) {
+        setStatus(msg);
+        button.disabled = false;
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <h2>Attendance</h2>
+  <p id="status">Enter Roll No and submit.</p>
+
+  <form onsubmit="handleSubmit(event)">
+    <label>
+      Roll No :
+      <input name="entry.846968130" type="text" required>
+    </label>
+
+    <!-- hidden GPS fields -->
+    <input id="lat" name="entry.718692023" type="hidden" value="">
+    <input id="lon" name="entry.1188559004" type="hidden" value="">
+
+    <br><br>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>
