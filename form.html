@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>QR Attendance (GPS only)</title>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 2rem; }
     button[disabled] { opacity:.5; }
@@ -12,12 +13,18 @@
     /* ─── 1. PUT YOUR OWN IDs HERE ─── */
     const SUBMIT_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfnnyE2QnBs7bp3QrM3M0-HR5an49l4SwdQ--n-ChGk4CS-Jw/formResponse";
 
-    const ROLL_KEY = "entry.846968130";      // Roll‑No question
-    const LAT_KEY  = "entry.718692023";      // ⬇️ Latitude  question
-    const LON_KEY  = "entry.1188559004";      // ⬇️ Longitude question
+    const ROLL_KEY = "entry.846968130";   // Roll‑No question
+    const LAT_KEY  = "entry.718692023";   // Latitude  question
+    const LON_KEY  = "entry.1188559004";  // Longitude question
+
+    /* OPTIONAL: Where to land after submit */
+    const CONFIRMATION_URL =
+      "https://docs.google.com/forms/d/e/1FAIpQLSfnnyE2QnBs7bp3QrM3M0-HR5an49l4SwdQ--n-ChGk4CS-Jw/viewform?usp=submitted";
 
     /* ─── 2. UTILITIES ─── */
-    function setStatus(msg) { document.getElementById("status").textContent = msg; }
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
 
     function getLocation() {
       return new Promise((resolve, reject) => {
@@ -46,11 +53,11 @@
 
         setStatus("Submitting…");
         const fd = new FormData(form);
-        await fetch(SUBMIT_URL, { method:"POST", mode:"no-cors", body:fd });
+        await fetch(SUBMIT_URL, { method: "POST", mode: "no-cors", body: fd });
 
-        /* success → simple confirmation */
-        setStatus("Attendance recorded ✅");
-        form.reset();
+        /* success → redirect to Google Form confirmation page */
+        window.location.href = CONFIRMATION_URL;
+
       } catch (msg) {
         setStatus(msg);
         button.disabled = false;
