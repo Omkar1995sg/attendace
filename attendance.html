@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>QR Attendance with Gmail Only</title>
+  <title>QR Attendance</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 2rem; }
-    button[disabled] { opacity: .5; }
   </style>
 </head>
 <body>
@@ -20,7 +19,7 @@
 
 <script>
 (function () {
-  // Populate Roll No dropdown J1–J600
+  // Populate Roll No dropdown
   const dropdown = document.getElementById("roll");
   for (let i = 1; i <= 600; i++) {
     const opt = document.createElement("option");
@@ -28,13 +27,12 @@
     dropdown.appendChild(opt);
   }
 
-  // Google Form URL and field entry IDs
+  // Google Form base URL and entry IDs
   const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSdQeaLekkBw6LWSkvdzj_II7SXcW3avndf63dQmColcWgB1Tw/viewform";
-  const entryRoll = "entry.846968130";      // Roll No
-  const entryLocation = "entry.718692023";   // Lat,Lng
-  const entryAddress = "entry.1049514207";   // Address
+  const entryRoll     = "entry.846968130";  // Roll No
+  const entryLocation = "entry.718692023";  // Location
+  const entryAddress  = "entry.1049514207"; // Address
 
-  // Handle Submit
   document.getElementById("rollForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const roll = dropdown.value;
@@ -65,14 +63,13 @@
         console.warn("Geocoding failed:", err);
       }
 
-      // Build final prefilled URL with hidden fields and submit param
+      // Prefilled URL with auto-submit
       const url = `${formBase}?usp=pp_url` +
         `&${entryRoll}=${encodeURIComponent(roll)}` +
         `&${entryLocation}=${encodeURIComponent(location)}` +
         `&${entryAddress}=${encodeURIComponent(address)}` +
         `&submit=Submit`;
 
-      // Open form where only Gmail shows
       window.open(url, "_blank");
     },
     err => alert("Location error: " + err.message),
