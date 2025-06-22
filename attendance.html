@@ -1,54 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Attendance with Address</title>
-  <script>
-    // ✅ Your Google Form prefilled base URL without any parameters
-    const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeGF_imyOBuVkD8hFOefWB2wNmSnSKKjbANB76pxMafSz8ljg/viewform?usp=pp_url";
-
-    // ✅ Replace with your actual field IDs from the pre-filled form
-    const rollKey = "entry.846968130";      // Roll No key
-    const locationKey = "entry.718692023";  // Address/Location key
-
-    function openFormWithLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-
-          // 🌐 Reverse geocoding API
-          const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-
-          try {
-            const response = await fetch(geoUrl);
-            const data = await response.json();
-            const address = data.display_name;
-
-            // ✅ Construct URL with only the location filled in
-            const url = formBaseURL +
-              `&${rollKey}=` +      // Roll No left blank for user input
-              `&${locationKey}=` + encodeURIComponent(address);
-
-            // 🌐 Redirect to Google Form with address auto-filled
-            window.location.href = url;
-
-          } catch (err) {
-            alert("Failed to fetch address from GPS. Please check internet.");
-          }
-
-        }, () => {
-          alert("Location access denied. Please enable it and reload.");
-        });
-      } else {
-        alert("Your browser doesn't support location.");
-      }
-    }
-
-    window.onload = openFormWithLocation;
-  </script>
+  <meta charset="UTF-8">
+  <title>QR Attendance with Gmail Only</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    button[disabled] { opacity: .5; }
+  </style>
 </head>
 <body>
-  <h2>Loading Attendance Form...</h2>
-  <p>Please allow location access to continue.</p>
+  <h2>Mark Attendance</h2>
+  <form id="rollForm">
+    <label for="roll">Roll No:</label>
+    <select id="roll" required>
+      <option value="">--Select Roll No--</option>
+    </select><br><br>
+    <button type="submit">Mark Present</button>
+  </form>
+
+<script>
+(function () {
+  // Populate Roll No dropdown J1–J600
+  const dropdown = document.getElementById("roll");
+  for (let i = 1; i <= 600; i++) {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = `J${i}`;
+    dropdown.appendChild(opt);
+  }
+
+  // Google Form URL and field entry IDs
+  const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSdQeaLekkBw6LWSkvdzj_II7SXcW3avndf63dQmColcWgB1Tw/viewform";
+  const entryRoll = "entry.846968130";      // Roll No
+  const entryLocation = "entry.718692023";   // Lat,Lng
+  const entryAddress = "entry.1049514207";   // Address
+
+  // Handle Submit
+  document.getElementById("rollForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const roll = dropdown.value;
+    if (!roll) {
+      alert("Please select your roll number.");
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      const location = `${lat},${lng}`;
+
+      let address = "Unknown";
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+          { headers: { "User-Agent": "qr-attendance/1.0" } }
+        );
+        const data = await resp.json();
+        address = data.display_name || "Unknown";
+      } catch (err) {
+        console.warn("Geocoding failed:", err);
+      }
+
+      // Build final prefilled URL with hidden fields and submit param
+      const url = `${formBase}?usp=pp_url` +
+        `&${entryRoll}=${encodeURIComponent(roll)}` +
+        `&${entryLocation}=${encodeURIComponent(location)}` +
+        `&${entryAddress}=${encodeURIComponent(address)}` +
+        `&submit=Submit`;
+
+      // Open form where only Gmail shows
+      window.open(url, "_blank");
+    },
+    err => alert("Location error: " + err.message),
+    { enableHighAccuracy: true, timeout: 10000 });
+  });
+})();
+</script>
 </body>
 </html>
